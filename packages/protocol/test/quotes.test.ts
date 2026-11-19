@@ -8,9 +8,9 @@ import {
   minimumFromTolerance,
   planQuote,
   planQuotes,
-  quoteBatch,
   quoteRoute,
   quoteAllRails,
+  quoteBatch,
   RAIL_DESTINATION_GAS_ESTIMATES,
   wouldSlip,
 } from "../src/quotes.js";
@@ -301,7 +301,20 @@ describe("slippage, which the quote deliberately knows nothing about", () => {
   });
 });
 
-describe("batch quote simulation with gas projections (quoteBatch)", () => {
+describe("route quoting helpers", () => {
+  it("quotes a single route through quoteRoute", () => {
+    const quote = quoteRoute({ ...request, route: RouteKind.Cctp }, snapshot());
+    expect(quote.route).toBe(RouteKind.Cctp);
+    expect(quote.available).toBe(true);
+  });
+
+  it("quotes all rails through quoteAllRails", () => {
+    const quotes = quoteAllRails(request, snapshot());
+    expect(quotes.map((q) => q.route)).toEqual([...ROUTE_KINDS]);
+  });
+});
+
+describe("batch quote simulation with gas projections (placeholder)", () => {
   const tiers = [100_000_000n, 500_000_000n, 1_000_000_000n] as const;
   const batchParams: QuoteParams = {
     strkey: G_ADDR,
@@ -416,10 +429,5 @@ describe("batch quote simulation with gas projections (quoteBatch)", () => {
       expect(res.available).toBe(false);
       expect(res.winningRail).toBeNull();
     }
-  });
-
-  it("exports convenience aliases quoteRoute and quoteAllRails", () => {
-    expect(quoteRoute).toBe(planQuote);
-    expect(quoteAllRails).toBe(planQuotes);
   });
 });

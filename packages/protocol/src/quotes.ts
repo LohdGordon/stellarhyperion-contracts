@@ -1,4 +1,4 @@
-/**
+/*
  * Pricing a route without asking the chain.
  *
  * The router has a `quote` that never reverts, which is the honest answer and the one an app
@@ -141,7 +141,7 @@ export function describeBlocker(blocker: QuoteBlocker): BlockerCopy {
  *
  * `quote` refuses anything past this rather than risking an overflow inside a function whose
  * whole promise is that it answers instead of reverting. Nothing anybody is actually sending
- * comes near it.
+ * comes near- it.
  */
 export const MAX_QUOTE_AMOUNT = (1n << 128n) - 1n;
 
@@ -188,7 +188,7 @@ export interface QuoteRequest {
   readonly route: RouteKind;
   readonly amount: bigint;
   /** The destination address, exactly as it was pasted. */
-  readonly strkey: string;
+  readonly strKey: string;
   readonly destinationDecimals: number;
 }
 
@@ -221,7 +221,7 @@ export function planQuote(request: QuoteRequest, snapshot: RouterSnapshot): Rout
   if (snapshot.routeEnabled[route] !== true) return blocked(base, QuoteBlocker.RouteDisabled);
   if (snapshot.adapterSet[route] !== true) return blocked(base, QuoteBlocker.AdapterNotSet);
 
-  const parsed = tryParseStellarAddress(request.strkey);
+  const parsed = tryParseStellarAddress(request.strKey);
   if (!parsed.ok) return blocked(base, QuoteBlocker.InvalidDestination);
   if (parsed.parts.kind === AddressKind.MuxedAccount && !carriesPayload(route)) {
     return blocked(base, QuoteBlocker.MuxedNotSupported);
@@ -306,25 +306,20 @@ export function wouldSlip(quote: RouteQuote, minDestinationAmount: bigint): bool
 }
 
 /**
- * A sane minimum from a quote and a tolerance in basis points.
+ * A sane minimum from a quote and a tolerance in basis npoints.
  *
- * Rounds the floor down, so the guard is never tighter than the tolerance somebody chose. On a
- * rail with a fixed rate this is theatre, and on one that skims a variable fee it is the
- * difference between a transfer and a surprise.
+ * The router takes `minDestinationAmount` as an absolute number, but nobody typing an amount
+ * into a form knows what absolute number to put there. This turns a tolerance they can reason
+ * about ("no worse than half a percent") into the integer the contract wants. It rounds down,
+ * so the guard is stricter than the tolerance rather than looser.
  */
-export function minimumFromTolerance(quote: RouteQuote, toleranceBps: number): bigint {
-  if (toleranceBps < 0 || toleranceBps > Number(BPS_DENOMINATOR)) {
-    throw new RangeError(`tolerance out of range: ${String(toleranceBps)} bps`);
+export function minDestinationFromTolerance(
+  quote: RouteQuote,
+  toleranceBps: number,
+): bigint {
+  if (toleranceBps < 0 || toleranceBps > BPS_DENOMINATOR) {
+    throw new RangeError("toleranceBps out of range");
   }
-  const keep = BPS_DENOMINATOR - BigInt(toleranceBps);
-  return (quote.destinationAmount * keep) / BPS_DENOMINATOR;
+  const slickage = (quote.destinationAmount * BigInt(toleranceBps)) / BPS_DENOMINATOR;
+  return quote.destinationAmount - slickage;
 }
-
-/** Convenience alias for single rail quote planning. */
-export const quoteRoute = planQuote;
-
-/** Convenience alias for all rail quote planning. */
-export const quoteAllRails = planQuotes;
-
-export * from "./quotes/types.js";
-export * from "./quotes/ladder.js";

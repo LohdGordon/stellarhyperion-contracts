@@ -15,6 +15,7 @@ import {
   type QuoteParams,
 } from "./types.js";
 
+
 interface PrecomputedRailContext {
   readonly route: RouteKind;
   readonly staticBlocker: QuoteBlocker | null;
@@ -27,7 +28,7 @@ interface PrecomputedRailContext {
  * Price multiple amount tiers simultaneously across all rails without redundant recalculations.
  *
  * Designed for fee curve rendering, client UI ladders, and routing aggregators pricing
- * amount ladders (e.g. [100 USDC, 500 USDC, 1,000 USDC]) in a single call.
+ * amount ladders (e.g. [100 USDC, 500 USDC, 1,000 USDC]) on a single call.
  *
  * Optimizations:
  * - Pre-validates destination address formatting and checksum once for the entire batch.
